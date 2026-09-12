@@ -641,7 +641,7 @@ function doServe(dir,risk){
   const sel=serveOptions();if(!dir)dir=drawFrom(sel);
   let firstIn=S.ck['1st in%']/100;if(risk==='big')firstIn*=0.88;else if(risk==='safe')firstIn=Math.min(0.95,firstIn*1.08);
   if(sn===1)M.stats[pt.svr].s1a++;
-  if(sn===1&&rnd()>firstIn){pt.shots.push({who:pt.svr,txt:`${dir} 1st serve — fault`,sit:''});enqueueShot({kind:'serve',who:pt.svr,court:pt.court,dir,fault:rnd()<0.5?'net':'long'});pt.serveNum=2;renderStrip();if(M.sync)return step();return setTimeout(step,M.fast?0:(COURT_ON?1300:400));}
+  if(sn===1&&rnd()>firstIn){pt.shots.push({who:pt.svr,txt:`${dir} 1st serve — fault`,sit:''});enqueueShot({kind:'serve',who:pt.svr,court:pt.court,dir,fault:rnd()<0.5?'net':'long'});pt.serveNum=2;renderStrip();if(M.sync)return step();return setTimeout(step,M.fast?0:humanWatching()?HUMAN_PACE:(COURT_ON?1300:400));}
   if(sn===1)M.stats[pt.svr].s1in++;else M.stats[pt.svr].s2a++;pt.serveNumFinal=sn;
   M.svUse=M.svUse||{1:{},2:{}};const su=M.svUse[pt.svr];const suKey=sn+'_'+pt.court;su[suKey]=su[suKey]||{};su[suKey][dir]=(su[suKey][dir]||0)+1;
   let readPen=1;if(pt.serveChosen){const u=su[suKey];const tot=Object.values(u).reduce((a,b)=>a+b,0);if(tot>=8){const share=u[dir]/tot;const nat=sel[dir]||0;const excess=Math.max(0,share-nat-0.15);readPen=Math.max(0.78,1-1.0*excess);}}
@@ -658,7 +658,7 @@ function doServe(dir,risk){
   if(res==='DF'){pt.shots.push({who:pt.svr,txt:label+' — double fault',sit:''});M.stats[pt.svr].df++;return endPoint(3-pt.svr,'double fault',0);}
   if(res==='ace'){pt.shots.push({who:pt.svr,txt:label+' — ACE',sit:'',end:true});M.stats[pt.svr].ace++;M.stats[pt.svr].unret++;return endPoint(pt.svr,'ace',1);}
   if(res==='unret'||res==='ret_err'){pt.shots.push({who:pt.svr,txt:label,sit:''});pt.shots.push({who:3-pt.svr,txt:'return error',sit:'',end:true});enqueueShot({kind:'return',who:3-pt.svr,cls:'BH',side:'mid',outcome:'UE'});M.stats[pt.svr].unret++;return endPoint(pt.svr,'unreturned serve',1);}
-  pt.shots.push({who:pt.svr,txt:label,sit:''});pt.serveDir=dir;pt.phase='return';renderStrip();if(M.sync)return;setTimeout(step,M.fast?0:(COURT_ON?1100:250));
+  pt.shots.push({who:pt.svr,txt:label,sit:''});pt.serveDir=dir;pt.phase='return';renderStrip();if(M.sync)return;setTimeout(step,M.fast?0:humanWatching()?HUMAN_PACE:(COURT_ON?1100:250));
 }
 function doReturn(style){
   const pt=M.pt,S=M.P[pt.svr],R=M.P[3-pt.svr],sn=pt.serveNum,dir=pt.serveDir;
