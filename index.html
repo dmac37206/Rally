@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rally — shot-by-shot tennis</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2B5C86">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rally">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -977,6 +983,7 @@ document.getElementById('btnAuto').onclick=e=>{if(!M)return;M.auto=!M.auto;e.tar
 document.getElementById('btnSkip').onclick=()=>{if(!M||!M.pt||M.pt.done)return;const was=M.auto;M.auto=true;document.getElementById('menu').innerHTML='';step();M.auto=was;};
 document.getElementById('btnGame').onclick=()=>{if(!M||M.over)return;const was=M.auto;M.auto=true;M.playingGame=true;const g=M.games[1]+M.games[2],tb=M.tb;document.getElementById('menu').innerHTML='';
   const iv=setInterval(()=>{if(M.over||M.games[1]+M.games[2]!==g||M.tb!==tb||(M.pt&&M.pt.done&&M.games[1]+M.games[2]!==g)){clearInterval(iv);M.playingGame=false;M.auto=was;return;}if(M.pt&&!M.pt.done)step();},40);};
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 document.addEventListener('keydown',e=>{if(!M||!M.pt||M.pt.done)return;const k=parseInt(e.key);if(k>=1&&k<=9){const b=document.querySelectorAll('#menu button')[k-1];if(b)choose(b);}});
 </script>
 </body>
