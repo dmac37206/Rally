@@ -214,7 +214,7 @@ header .sub{color:var(--ink-soft)}
   <select id="selCtl2" class="ctl"><option value="human">human coach</option><option value="0">computer · no scouting</option><option value="0.6">computer · cautious</option><option value="1.2" selected>computer · balanced</option><option value="2">computer · aggressive</option><option value="opt">computer · optimal (plays the odds like a human)</option></select>
 </div>
 <div class="setup">
-  <label>at</label><select id="selTour"><option value="">— any court —</option></select>
+  <label>at</label><select id="selTour"><option value="">Pick tournament</option></select>
   <label>on</label><select id="selSurf"><option>Hard</option><option>Clay</option><option>Grass</option></select>
   <label>format</label><select id="selFmt"><option value="3">best of 3</option><option value="5">best of 5</option></select>
   <label>menu</label><select id="selMenu"><option value="coach">Coach version (numbers + ★)</option><option value="pro">Pro version (shot names, colour by tendency)</option></select>
@@ -641,7 +641,7 @@ function doServe(dir,risk){
   const sel=serveOptions();if(!dir)dir=drawFrom(sel);
   let firstIn=S.ck['1st in%']/100;if(risk==='big')firstIn*=0.88;else if(risk==='safe')firstIn=Math.min(0.95,firstIn*1.08);
   if(sn===1)M.stats[pt.svr].s1a++;
-  if(sn===1&&rnd()>firstIn){pt.shots.push({who:pt.svr,txt:`${dir} 1st serve — fault`,sit:''});enqueueShot({kind:'serve',who:pt.svr,court:pt.court,dir,fault:rnd()<0.5?'net':'long'});pt.serveNum=2;renderStrip();if(M.sync)return step();return setTimeout(step,M.fast?0:humanWatching()?HUMAN_PACE:(COURT_ON?1300:400));}
+  if(sn===1&&rnd()>firstIn){pt.shots.push({who:pt.svr,txt:`${dir} 1st serve — fault`,sit:''});enqueueShot({kind:'serve',who:pt.svr,court:pt.court,dir,fault:rnd()<0.5?'net':'long'});pt.serveNum=2;renderStrip();if(M.sync)return step();return setTimeout(step,M.fast?0:(humanWatching()&&!isHuman(pt.svr))?HUMAN_PACE:(COURT_ON?1300:400));}
   if(sn===1)M.stats[pt.svr].s1in++;else M.stats[pt.svr].s2a++;pt.serveNumFinal=sn;
   M.svUse=M.svUse||{1:{},2:{}};const su=M.svUse[pt.svr];const suKey=sn+'_'+pt.court;su[suKey]=su[suKey]||{};su[suKey][dir]=(su[suKey][dir]||0)+1;
   let readPen=1;if(pt.serveChosen){const u=su[suKey];const tot=Object.values(u).reduce((a,b)=>a+b,0);if(tot>=8){const share=u[dir]/tot;const nat=sel[dir]||0;const excess=Math.max(0,share-nat-0.15);readPen=Math.max(0.78,1-1.0*excess);}}
@@ -658,7 +658,7 @@ function doServe(dir,risk){
   if(res==='DF'){pt.shots.push({who:pt.svr,txt:label+' — double fault',sit:''});M.stats[pt.svr].df++;return endPoint(3-pt.svr,'double fault',0);}
   if(res==='ace'){pt.shots.push({who:pt.svr,txt:label+' — ACE',sit:'',end:true});M.stats[pt.svr].ace++;M.stats[pt.svr].unret++;return endPoint(pt.svr,'ace',1);}
   if(res==='unret'||res==='ret_err'){pt.shots.push({who:pt.svr,txt:label,sit:''});pt.shots.push({who:3-pt.svr,txt:'return error',sit:'',end:true});enqueueShot({kind:'return',who:3-pt.svr,cls:'BH',side:'mid',outcome:'UE'});M.stats[pt.svr].unret++;return endPoint(pt.svr,'unreturned serve',1);}
-  pt.shots.push({who:pt.svr,txt:label,sit:''});pt.serveDir=dir;pt.phase='return';renderStrip();if(M.sync)return;setTimeout(step,M.fast?0:humanWatching()?HUMAN_PACE:(COURT_ON?1100:250));
+  pt.shots.push({who:pt.svr,txt:label,sit:''});pt.serveDir=dir;pt.phase='return';renderStrip();if(M.sync)return;setTimeout(step,M.fast?0:(humanWatching()&&!isHuman(3-pt.svr))?HUMAN_PACE:(COURT_ON?1100:250));
 }
 function doReturn(style){
   const pt=M.pt,S=M.P[pt.svr],R=M.P[3-pt.svr],sn=pt.serveNum,dir=pt.serveDir;
@@ -682,7 +682,7 @@ function doReturn(style){
   const dtxt=depth==='7'?'short':depth==='8'?'mid-court':'deep';
   pt.shots.push({who:3-pt.svr,txt:`${CLS_NAME[rcls]} return ${tgtName(rside)}, ${dtxt}`,sit:''});enqueueShot({kind:'return',who:3-pt.svr,cls:rcls,side:rside,depth,outcome:'in'});
   pt.phase='rally';pt.hitter=pt.svr;pt.inc={cls:rcls,side:rside};pt.n=3;pt.sit=depth==='9'?'S':depth==='7'?'H':'N';pt.pi={S:0,N:1,H:0};
-  renderStrip();if(M.sync)return;setTimeout(step,paceShot());
+  renderStrip();if(M.sync)return;if(isHuman(pt.hitter)&&!M.auto)setTimeout(step,M.fast?0:(COURT_ON?1250:0));else setTimeout(step,paceShot());
 }
 function rallyOptions(){
   const pt=M.pt,H=M.P[pt.hitter];const inc=`${pt.inc.cls}|${pt.inc.side}`,ph=pt.n===3?'3':pt.n===4?'4':'5+';
@@ -827,8 +827,11 @@ function baselineY(p){return p===1?YB:YT;}
 function towardNet(p,frac){return p===1?YB-(YB-NET)*frac:YT+(NET-YT)*frac;}
 let COURT_ON=false;
 function enqueueShot(sh){if(!M||M.quiet||!COURT_ON)return;COURT.queue.push(sh);if(!COURT.busy)courtNext();}
-function paceShot(){return M.fast?0:(COURT_ON?1250:520);}
-function pacePoint(){return M.fast?5:(COURT_ON?2600:900);}
+// when a human is coaching, the computer's actions wait 1.5 s so the result can be read; when the turn comes back to the human, the menu appears right away
+const HUMAN_PACE=1500;
+function humanWatching(){return !!M.me&&!M.auto&&!M.fast;}
+function paceShot(){return M.fast?0:humanWatching()?HUMAN_PACE:(COURT_ON?1250:520);}
+function pacePoint(){return M.fast?5:humanWatching()?HUMAN_PACE:(COURT_ON?2600:900);}
 function courtNext(){const sh=COURT.queue.shift();if(!sh){COURT.busy=false;return;}COURT.busy=true;
   const fast=M.fast;const dur=fast?0:(sh.kind==='serve'?780:(sh.cls==='DROP'||sh.cls==='NET')?720:950);
   const hitter=sh.who,recv=3-sh.who;let from={...COURT.p[hitter]};let to;
@@ -960,7 +963,7 @@ function populate(){const ns=[...seasonNames()].sort((a,b)=>a.split(' ').pop().l
   const sheets=SEA==='live'?(DATA.SHEETS||[]):(DATA.SEASONS[SEA].sheets||[]);
   const opt=(t,i)=>`<option value="${i}">${t.name.replace(' (Challenger)','')}${sheets.includes(t.name)?' ✓':''}${t.pending?' (no draw yet)':''} · ${t.label||t.surface}${t.indoor&&t.label!=='Carpet'?' (indoor)':''}${t.level==='G'?' · Grand Slam, best of 5':t.level==='M'?' · Masters 1000':t.level==='500'?' · ATP 500':t.level==='250'?' · ATP 250':t.level==='F'?' · Tour Finals':''}</option>`;
   const all=seasonTours();const tour=all.map((t,i)=>[t,i]).filter(([t])=>t.level!=='C'),ch=all.map((t,i)=>[t,i]).filter(([t])=>t.level==='C');
-  st.innerHTML='<option value="">— any court —</option><optgroup label="ATP Tour">'+tour.map(([t,i])=>opt(t,i)).join('')+'</optgroup>'+(ch.length?'<optgroup label="Challenger Tour">'+ch.map(([t,i])=>opt(t,i)).join('')+'</optgroup>':'');
+  st.innerHTML='<option value="">Pick tournament</option><optgroup label="ATP Tour">'+tour.map(([t,i])=>opt(t,i)).join('')+'</optgroup>'+(ch.length?'<optgroup label="Challenger Tour">'+ch.map(([t,i])=>opt(t,i)).join('')+'</optgroup>':'');
   document.getElementById('btnDraw').style.display='none';document.getElementById('draw').style.display='none';TD=null;document.getElementById('players').style.display='none';document.getElementById('seasonpanel').style.display='none';
   if(SEA==='live'){document.getElementById('selP1').value='Jannik Sinner';document.getElementById('selP2').value='Carlos Alcaraz';}
   else{const top=Object.values(DATA.SEASONS[SEA].profiles).filter(p=>p.matches_year>=10).sort((a,b)=>b.rating-a.rating);document.getElementById('selP1').value=top[0].player;document.getElementById('selP2').value=top[1].player;}}
