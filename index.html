@@ -167,13 +167,36 @@ header .sub{color:var(--ink-soft)}
 @media (max-width:820px){.two{grid-template-columns:1fr}}
 @media (max-width:820px){.scout{grid-template-columns:1fr}}
 @media (max-width:820px){.board{grid-template-columns:1fr}.lower{grid-template-columns:1fr}.menu{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){
+  html,body{font-size:15px}
+  .wrap{padding:8px 8px 40px}
+  header{margin-bottom:6px}header h1{font-size:24px}header .sub{display:none}
+  .setup{gap:6px;margin:4px 0 6px}.setup select,.setup button{padding:6px 8px;font-size:14px;max-width:100%}
+  body.playing .setup{display:none}
+  body.playing .setupbtn{display:inline-block}
+  .board{position:sticky;top:0;z-index:5;padding:6px 10px;gap:2px 0;margin-bottom:8px;grid-template-columns:1fr}
+  .board .name{font-size:17px;gap:5px}.board .avatar{width:26px;height:26px;font-size:11px}.board .you{display:none}
+  .board .num{font-size:20px;min-width:24px}.board .num.pts{padding:0 5px}.board .sets .num{font-size:18px}
+  .scoutbar{padding:6px 10px;font-size:13px;margin-bottom:8px}
+  .live{padding:10px 10px 12px;margin-bottom:8px}
+  .live .status .ctx{font-size:16px}.live .status .hint{display:none}
+  .strip{margin:8px 0 8px;gap:4px}.strip .chip{font-size:12px;padding:3px 8px}
+  .menu{grid-template-columns:1fr;gap:6px}
+  .menu button{padding:9px 10px;grid-template-columns:18px 1fr auto}.menu button .odds{font-size:12px}
+  .live .actions{gap:6px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}.live .actions button{white-space:nowrap;padding:5px 9px;font-size:13px}
+  .result{font-size:17px}
+  .lower{gap:12px}.log{max-height:260px}
+  .livegrid{grid-template-columns:1fr}.courtwrap{max-width:100%}
+  .draw .bar h2{font-size:17px}.bracket{max-height:420px}
+  .two{grid-template-columns:1fr}
+}
 @media (prefers-reduced-motion:no-preference){.strip .chip{animation:pop .18s ease-out}@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>Rally</h1>
+  <h1>Rally</h1><button class="setupbtn" id="btnSetup" style="display:none;margin-left:auto;border:1px solid var(--rule);background:#fff;border-radius:6px;padding:4px 10px;font-size:13px">Setup</button>
   <div class="sub">shot-by-shot tennis from real charted points · prototype</div>
 </header>
 <div class="setup">
@@ -575,7 +598,7 @@ function newMatchNamed(meName,oppName,bestOf,ctl,tourOverride){
     const r=Math.exp(4*L.dRPW/100), s=Math.exp(3.5*(L.dSPW-0.6*L.dRPW)/100);
     P.adj=JSON.parse(JSON.stringify(P.adj));for(const ph in (P.adj.i_ue||{}))P.adj.i_ue[ph]*=r;for(const ph in (P.adj.d_win||{}))P.adj.d_win[ph]/=r;P.surfServe=s;P.surfLean=L;}
   M.scout={1:scout(M.P[1]),2:scout(M.P[2])};   // scout[p] = report ON player p (what his opponent should do)
-  renderScout();renderBoard();courtInit();startPoint();
+  renderScout();renderBoard();courtInit();document.body.classList.add('playing');startPoint();
 }
 function court(){const t=M.tb?M.tbPts:M.pts;const tot=M.tb?(t[1]+t[2]):(ptIdx(t[1])+ptIdx(t[2]));return tot%2===0?'deuce':'ad';}
 function ptIdx(p){return p;} // pts stored as 0..n counts
@@ -856,8 +879,9 @@ function renderStrip(){if(M&&M.quiet)return;const s=document.getElementById('str
   else if(pt.phase==='return')ctx.innerHTML=`${M.P[3-pt.svr].name.split(' ').pop()} returning a ${pt.serveDir} ${pt.serveNum===1?'first':'second'} serve`;
   else{const sit=pt.sit==='S'?'<em>stretched</em>':pt.sit==='H'?'<em>short ball to attack</em>':'neutral';ctx.innerHTML=`${M.P[pt.hitter].name.split(' ').pop()}, ball to his ${pt.inc.side==='mid'?'middle':pt.inc.side==='FH'?'forehand':'backhand'} — ${sit}`;}
   hint.textContent='';}
+function phoneScroll(){if(window.innerWidth>520)return;const b=document.getElementById('board');const y=b.getBoundingClientRect().top+window.scrollY;if(Math.abs(window.scrollY-y)>40)window.scrollTo({top:y,behavior:'smooth'});}
 function renderMenu(){
-  const m=document.getElementById('menu');const pt=M.pt;let html='';const hint=document.getElementById('hint');
+  const m=document.getElementById('menu');const pt=M.pt;let html='';const hint=document.getElementById('hint');phoneScroll();
   if(pt.phase==='serve'){const sel=serveOptions();const dirs=['wide','body','T'];let k=1;
     const pro=M.menuMode==='pro';
     const smax=Math.max(...dirs.map(d=>sel[d]||0))||1;
@@ -939,7 +963,8 @@ function populate(){const ns=[...seasonNames()].sort((a,b)=>a.split(' ').pop().l
 populate();
 {const st=document.getElementById('selTour');st.onchange=()=>{const t=seasonTours()[+st.value];document.getElementById('btnDraw').style.display=(t&&seasonDraws()[t.name])?'':'none';if(!t)return;document.getElementById('selSurf').value=t.surface;document.getElementById('selFmt').value=String(t.bo);};
  document.getElementById('btnDraw').onclick=openDraw;}
-document.getElementById('btnStart').onclick=()=>{const me=document.getElementById('selP1').value,opp=document.getElementById('selP2').value;if(me===opp){alert('Pick two different players.');return;}document.getElementById('log').innerHTML='';newMatch(me,opp,+document.getElementById('selFmt').value);};
+document.getElementById('btnSetup').onclick=()=>{document.body.classList.toggle('playing');};
+document.getElementById('btnStart').onclick=()=>{document.body.classList.remove('playing');const me=document.getElementById('selP1').value,opp=document.getElementById('selP2').value;if(me===opp){alert('Pick two different players.');return;}document.getElementById('log').innerHTML='';newMatch(me,opp,+document.getElementById('selFmt').value);};
 {const sm=document.getElementById('selMenu');if(sm)sm.onchange=()=>{if(M)M.menuMode=sm.value;if(M&&M.pt&&!M.pt.done&&document.querySelector('#menu button'))renderMenu();};}
 document.getElementById('btnCoach').onclick=e=>{if(!M)return;M.followCoach=!M.followCoach;e.target.textContent=`Follow my coach: ${M.followCoach?'on':'off'}`;e.target.classList.toggle('on',M.followCoach);if(M.followCoach&&M.pt&&!M.pt.done&&document.querySelector('#menu button'))renderMenu();};
 document.getElementById('btnPlayers').onclick=()=>{const el=document.getElementById('players');if(el.style.display==='block'){el.style.display='none';return;}renderPlayers();};
